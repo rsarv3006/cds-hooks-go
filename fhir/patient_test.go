@@ -55,7 +55,7 @@ func TestPatient_Age_LeapYear(t *testing.T) {
 	p := Patient{BirthDate: "2000-02-29"}
 	age, err := p.Age()
 	assert.NoError(t, err)
-	assert.Equal(t, 25, age)
+	assert.Equal(t, 26, age)
 }
 
 func TestPatient_DisplayName(t *testing.T) {
