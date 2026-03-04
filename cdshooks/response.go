@@ -53,9 +53,8 @@ type FeedbackRequest struct {
 type FeedbackOutcome string
 
 const (
-	OutcomeAccepted      FeedbackOutcome = "accepted"
-	OutcomeOverridden    FeedbackOutcome = "overridden"
-	OutcomeNoActionTaken FeedbackOutcome = "noActionTaken"
+	OutcomeAccepted   FeedbackOutcome = "accepted"
+	OutcomeOverridden FeedbackOutcome = "overridden"
 )
 
 type AcceptedSuggestion struct {

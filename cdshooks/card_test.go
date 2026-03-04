@@ -57,7 +57,7 @@ func TestCardBuilder_Success(t *testing.T) {
 	assert.Equal(t, "Test summary", card.Summary)
 	assert.Equal(t, IndicatorInfo, card.Indicator)
 	assert.NotEmpty(t, card.UUID)
-	assert.Len(t, card.Suggestions, 1)
+	assert.Len(t, *card.Suggestions, 1)
 }
 
 func TestCardBuilder_MustBuildPanics(t *testing.T) {
@@ -79,6 +79,8 @@ func TestSuggestionBuilder_Success(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, "Test suggestion", suggestion.Label)
-	assert.True(t, suggestion.IsRecommended)
-	assert.Len(t, suggestion.Actions, 1)
+	assert.NotNil(t, suggestion.IsRecommended)
+	assert.True(t, *suggestion.IsRecommended)
+	assert.NotNil(t, suggestion.Actions)
+	assert.Len(t, *suggestion.Actions, 1)
 }

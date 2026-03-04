@@ -62,13 +62,14 @@ func handlePatientView(ctx context.Context, req cdshooks.CDSRequest) (cdshooks.C
 		indicator = cdshooks.IndicatorWarning
 	}
 
+	url := "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4339726/"
 	card, err := cdshooks.NewCard(
 		fmt.Sprintf("Medication review recommended — patient aged %d (%d active medications)", age, medCount),
 		indicator,
 	).
 		WithSource(cdshooks.Source{
 			Label: "STOPP/START Criteria v3",
-			URL:   "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4339726/",
+			URL:   &url,
 		}).
 		WithDetail("Consider a pharmacist-led medication review per STOPP/START criteria.").
 		AddLink(cdshooks.Link{

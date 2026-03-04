@@ -29,9 +29,9 @@ type Card struct {
 
 type Suggestion struct {
 	Label         string
-	UUID          *string
-	IsRecommended *bool
-	Actions       *[]Action
+	UUID          string
+	IsRecommended bool
+	Actions       []Action
 }
 
 type Action struct {
@@ -54,7 +54,7 @@ type Link struct {
 	URL            string
 	Type           LinkType
 	AppContext     string
-	Autolaunchable *bool
+	Autolaunchable bool
 }
 
 type LinkType string
@@ -72,14 +72,14 @@ type Source struct {
 }
 
 type OverrideReason struct {
-	Reason      *Coding
-	UserComment *string
+	ReasonCode Coding
 }
 
 type Coding struct {
 	System  string
+	Version string
 	Code    string
-	Display *string
+	Display string
 }
 
 type CardBuilder struct {
@@ -116,11 +116,7 @@ func (b *CardBuilder) AddSuggestion(suggestion Suggestion) *CardBuilder {
 	if b.err != nil {
 		return b
 	}
-	if b.card.Suggestions != nil {
-		*b.card.Suggestions = append(*b.card.Suggestions, suggestion)
-	}
-
-	b.card.Suggestions = &[]Suggestion{suggestion}
+	b.card.Suggestions = append(b.card.Suggestions, suggestion)
 	return b
 }
 
@@ -128,12 +124,7 @@ func (b *CardBuilder) AddLink(link Link) *CardBuilder {
 	if b.err != nil {
 		return b
 	}
-	if b.card.Links != nil {
-
-		*b.card.Links = append(*b.card.Links, link)
-	}
-
-	b.card.Links = &[]Link{link}
+	b.card.Links = append(b.card.Links, link)
 	return b
 }
 
@@ -170,20 +161,16 @@ func (b *CardBuilder) Build() (Card, error) {
 		return Card{}, &ErrInvalidCard{Field: "SelectionBehavior", Reason: "required when Suggestions present"}
 	}
 
-	if b.card.UUID == nil || *b.card.UUID == "" {
-		newUUID := uuid.New().String()
-		b.card.UUID = &newUUID
+	if *b.card.UUID == "" || b.card.UUID == nil {
+		*b.card.UUID = uuid.New().String()
 	}
 
-	if b.card.Suggestions != nil {
-		for i := range *b.card.Suggestions {
-			if (*b.card.Suggestions)[i].UUID == nil || *(*b.card.Suggestions)[i].UUID == "" {
-				newUUID := uuid.New().String()
-				(*b.card.Suggestions)[i].UUID = &newUUID
-			}
+	for i := range b.card.Suggestions {
+		if b.card.Suggestions[i].UUID == "" {
+			b.card.Suggestions[i].UUID = uuid.New().String()
 		}
-
 	}
+
 	return b.card, nil
 }
 
@@ -212,7 +199,7 @@ func (b *SuggestionBuilder) WithUUID(uuid string) *SuggestionBuilder {
 	if b.err != nil {
 		return b
 	}
-	b.suggestion.UUID = &uuid
+	b.suggestion.UUID = uuid
 	return b
 }
 
@@ -220,7 +207,7 @@ func (b *SuggestionBuilder) WithRecommended(recommended bool) *SuggestionBuilder
 	if b.err != nil {
 		return b
 	}
-	b.suggestion.IsRecommended = &recommended
+	b.suggestion.IsRecommended = recommended
 	return b
 }
 
@@ -228,11 +215,7 @@ func (b *SuggestionBuilder) AddAction(action Action) *SuggestionBuilder {
 	if b.err != nil {
 		return b
 	}
-	if b.suggestion.Actions == nil {
-		b.suggestion.Actions = &[]Action{action}
-	} else {
-		*b.suggestion.Actions = append(*b.suggestion.Actions, action)
-	}
+	b.suggestion.Actions = append(b.suggestion.Actions, action)
 	return b
 }
 

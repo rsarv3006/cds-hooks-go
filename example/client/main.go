@@ -51,8 +51,8 @@ func main() {
 
 	for _, card := range response.Cards {
 		fmt.Printf("Card: %s [%s]\n", card.Summary, card.Indicator)
-		if card.Detail != "" {
-			fmt.Printf("  Detail: %s\n", card.Detail)
+		if card.Detail != nil && *card.Detail != "" {
+			fmt.Printf("  Detail: %s\n", *card.Detail)
 		}
 	}
 }

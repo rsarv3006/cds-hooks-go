@@ -11,6 +11,7 @@ type CDSRequest struct {
 	FHIRAuth     *FHIRAuth       `json:"fhirAuthorization"`
 	Context      json.RawMessage `json:"context"`
 	Prefetch     Prefetch        `json:"prefetch"`
+	Extension    map[string]any  `json:"extension,omitempty"`
 }
 
 type FHIRAuth struct {
@@ -19,6 +20,7 @@ type FHIRAuth struct {
 	ExpiresIn   int    `json:"expires_in"`
 	Scope       string `json:"scope"`
 	Subject     string `json:"subject"`
+	Patient     string `json:"patient,omitempty"`
 }
 
 func DecodeContext[T any](ctx json.RawMessage) (T, error) {

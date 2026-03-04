@@ -5,10 +5,11 @@ import "context"
 type Service struct {
 	ID                string
 	Hook              Hook
-	Title             string
+	Title             *string
 	Description       string
 	Prefetch          map[string]string
 	UsageRequirements string
+	Extension         map[string]any
 }
 
 type Handler interface {
@@ -53,7 +54,7 @@ func (b *ServiceBuilder) WithTitle(title string) *ServiceBuilder {
 	if b.err != nil {
 		return b
 	}
-	b.service.Title = title
+	b.service.Title = &title
 	return b
 }
 
@@ -110,7 +111,7 @@ func (b *ServiceBuilder) Build() (ServiceEntry, error) {
 		return ServiceEntry{}, &ErrInvalidCard{Field: "Service.Hook", Reason: "required"}
 	}
 
-	if b.service.Title == "" {
+	if b.service.Title == nil || *b.service.Title == "" {
 		return ServiceEntry{}, &ErrInvalidCard{Field: "Service.Title", Reason: "required"}
 	}
 
