@@ -12,12 +12,13 @@ import (
 )
 
 func TestServer_Discovery(t *testing.T) {
+	title := "Test Service"
 	server := NewServer()
 	server.Register(ServiceEntry{
 		Service: Service{
 			ID:          "test-service",
 			Hook:        HookPatientView,
-			Title:       "Test Service",
+			Title:       &title,
 			Description: "A test service",
 		},
 		Handler: HandlerFunc(func(ctx context.Context, req CDSRequest) (CDSResponse, error) {
@@ -78,12 +79,13 @@ func TestServer_CORS(t *testing.T) {
 }
 
 func TestServer_HookInstanceValidation(t *testing.T) {
+	title := "Test Service"
 	server := NewServer()
 	server.Register(ServiceEntry{
 		Service: Service{
 			ID:          "test-service",
 			Hook:        HookPatientView,
-			Title:       "Test Service",
+			Title:       &title,
 			Description: "A test service",
 		},
 		Handler: HandlerFunc(func(ctx context.Context, req CDSRequest) (CDSResponse, error) {
@@ -103,12 +105,13 @@ func TestServer_HookInstanceValidation(t *testing.T) {
 }
 
 func TestServer_CardsNeverNull(t *testing.T) {
+	title := "Test Service"
 	server := NewServer()
 	server.Register(ServiceEntry{
 		Service: Service{
 			ID:          "test-service",
 			Hook:        HookPatientView,
-			Title:       "Test Service",
+			Title:       &title,
 			Description: "A test service",
 		},
 		Handler: HandlerFunc(func(ctx context.Context, req CDSRequest) (CDSResponse, error) {
@@ -129,4 +132,220 @@ func TestServer_CardsNeverNull(t *testing.T) {
 	err := json.Unmarshal(w.Body.Bytes(), &resp)
 	assert.NoError(t, err)
 	assert.NotNil(t, resp.Cards)
+}
+
+func TestServer_FeedbackEndpoint(t *testing.T) {
+	title := "Test Service"
+	feedbackReceived := false
+	var receivedServiceID string
+	var receivedFeedback FeedbackRequest
+
+	server := NewServer(WithFeedbackHandler(&testFeedbackHandler{
+		fn: func(ctx context.Context, serviceID string, feedback FeedbackRequest) error {
+			feedbackReceived = true
+			receivedServiceID = serviceID
+			receivedFeedback = feedback
+			return nil
+		},
+	}))
+	server.Register(ServiceEntry{
+		Service: Service{
+			ID:          "test-service",
+			Hook:        HookPatientView,
+			Title:       &title,
+			Description: "A test service",
+		},
+		Handler: HandlerFunc(func(ctx context.Context, req CDSRequest) (CDSResponse, error) {
+			return EmptyResponse(), nil
+		}),
+	})
+
+	feedbackBody := `{"card":"card-123","outcome":"accepted","acceptedSuggestions":[{"id":"suggestion-456"}],"outcomeTimestamp":"2024-01-01T00:00:00Z"}`
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("POST", "/cds-services/test-service/feedback",
+		strings.NewReader(feedbackBody))
+	r.Header.Set("Content-Type", "application/json")
+	server.Handler().ServeHTTP(w, r)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.True(t, feedbackReceived)
+	assert.Equal(t, "test-service", receivedServiceID)
+	assert.Equal(t, "card-123", receivedFeedback.Card)
+	assert.Equal(t, OutcomeAccepted, receivedFeedback.Outcome)
+}
+
+func TestServer_FeedbackEndpoint_Override(t *testing.T) {
+	title := "Test Service"
+	var receivedFeedback FeedbackRequest
+
+	server := NewServer(WithFeedbackHandler(&testFeedbackHandler{
+		fn: func(ctx context.Context, serviceID string, feedback FeedbackRequest) error {
+			receivedFeedback = feedback
+			return nil
+		},
+	}))
+	server.Register(ServiceEntry{
+		Service: Service{
+			ID:          "test-service",
+			Hook:        HookPatientView,
+			Title:       &title,
+			Description: "A test service",
+		},
+		Handler: HandlerFunc(func(ctx context.Context, req CDSRequest) (CDSResponse, error) {
+			return EmptyResponse(), nil
+		}),
+	})
+
+	reason := OverrideReason{
+		Reason: &Coding{Code: "reason-code"},
+	}
+	reasonJSON, _ := json.Marshal(reason)
+	feedbackBody := `{"card":"card-123","outcome":"overridden","overrideReason":` + string(reasonJSON) + `,"outcomeTimestamp":"2024-01-01T00:00:00Z"}`
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("POST", "/cds-services/test-service/feedback",
+		strings.NewReader(feedbackBody))
+	r.Header.Set("Content-Type", "application/json")
+	server.Handler().ServeHTTP(w, r)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, OutcomeOverridden, receivedFeedback.Outcome)
+	assert.NotNil(t, receivedFeedback.OverrideReason)
+}
+
+func TestServer_FeedbackEndpoint_NotEnabled(t *testing.T) {
+	server := NewServer()
+
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("POST", "/cds-services/test-service/feedback",
+		strings.NewReader(`{}`))
+	r.Header.Set("Content-Type", "application/json")
+	server.Handler().ServeHTTP(w, r)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestServer_FeedbackEndpoint_InvalidBody(t *testing.T) {
+	title := "Test Service"
+	server := NewServer(WithFeedbackHandler(&testFeedbackHandler{
+		fn: func(ctx context.Context, serviceID string, feedback FeedbackRequest) error {
+			return nil
+		},
+	}))
+	server.Register(ServiceEntry{
+		Service: Service{
+			ID:          "test-service",
+			Hook:        HookPatientView,
+			Title:       &title,
+			Description: "A test service",
+		},
+		Handler: HandlerFunc(func(ctx context.Context, req CDSRequest) (CDSResponse, error) {
+			return EmptyResponse(), nil
+		}),
+	})
+
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("POST", "/cds-services/test-service/feedback",
+		strings.NewReader(`{invalid`))
+	r.Header.Set("Content-Type", "application/json")
+	server.Handler().ServeHTTP(w, r)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+type testFeedbackHandler struct {
+	fn func(ctx context.Context, serviceID string, feedback FeedbackRequest) error
+}
+
+func (h *testFeedbackHandler) Feedback(ctx context.Context, serviceID string, feedback FeedbackRequest) error {
+	return h.fn(ctx, serviceID, feedback)
+}
+
+func TestServer_ErrorHandling_InvalidJSON(t *testing.T) {
+	title := "Test Service"
+	server := NewServer()
+	server.Register(ServiceEntry{
+		Service: Service{
+			ID:          "test-service",
+			Hook:        HookPatientView,
+			Title:       &title,
+			Description: "A test service",
+		},
+		Handler: HandlerFunc(func(ctx context.Context, req CDSRequest) (CDSResponse, error) {
+			return EmptyResponse(), nil
+		}),
+	})
+
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("POST", "/cds-services/test-service",
+		strings.NewReader(`{invalid json`))
+	r.Header.Set("Content-Type", "application/json")
+	server.Handler().ServeHTTP(w, r)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Contains(t, w.Body.String(), "invalid request body")
+}
+
+func TestServer_ErrorHandling_MissingHookInstance(t *testing.T) {
+	title := "Test Service"
+	server := NewServer()
+	server.Register(ServiceEntry{
+		Service: Service{
+			ID:          "test-service",
+			Hook:        HookPatientView,
+			Title:       &title,
+			Description: "A test service",
+		},
+		Handler: HandlerFunc(func(ctx context.Context, req CDSRequest) (CDSResponse, error) {
+			return EmptyResponse(), nil
+		}),
+	})
+
+	body := `{"hook":"patient-view","context":{}}`
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("POST", "/cds-services/test-service",
+		strings.NewReader(body))
+	r.Header.Set("Content-Type", "application/json")
+	server.Handler().ServeHTTP(w, r)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Contains(t, w.Body.String(), "hookInstance")
+}
+
+func TestServer_ErrorHandling_InvalidHookInstance(t *testing.T) {
+	title := "Test Service"
+	server := NewServer()
+	server.Register(ServiceEntry{
+		Service: Service{
+			ID:          "test-service",
+			Hook:        HookPatientView,
+			Title:       &title,
+			Description: "A test service",
+		},
+		Handler: HandlerFunc(func(ctx context.Context, req CDSRequest) (CDSResponse, error) {
+			return EmptyResponse(), nil
+		}),
+	})
+
+	body := `{"hook":"patient-view","hookInstance":"not-a-uuid","context":{}}`
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("POST", "/cds-services/test-service",
+		strings.NewReader(body))
+	r.Header.Set("Content-Type", "application/json")
+	server.Handler().ServeHTTP(w, r)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Contains(t, w.Body.String(), "UUID")
+}
+
+func TestServer_ErrorHandling_404(t *testing.T) {
+	server := NewServer()
+
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("POST", "/cds-services/nonexistent",
+		strings.NewReader(`{"hookInstance":"550e8400-e29b-41d4-a716-446655440000"}`))
+	r.Header.Set("Content-Type", "application/json")
+	server.Handler().ServeHTTP(w, r)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.Contains(t, w.Body.String(), "not found")
 }
