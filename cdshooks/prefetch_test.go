@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	fhir "github.com/samply/golang-fhir-models/fhir-models/fhir"
 	"github.com/stretchr/testify/assert"
-	"github.com/your-org/cds-hooks-go/fhir"
 )
 
 func TestPrefetch_Get(t *testing.T) {
@@ -31,7 +31,7 @@ func TestPrefetch_Decode(t *testing.T) {
 	var patient fhir.Patient
 	err := p.Decode("patient", &patient)
 	assert.NoError(t, err)
-	assert.Equal(t, "123", patient.ID)
+	assert.Equal(t, "123", *patient.Id)
 }
 
 func TestPrefetch_Decode_Missing(t *testing.T) {
@@ -50,7 +50,7 @@ func TestPrefetch_Patient(t *testing.T) {
 
 	patient, err := p.Patient("patient")
 	assert.NoError(t, err)
-	assert.Equal(t, "123", patient.ID)
+	assert.Equal(t, "123", *patient.Id)
 }
 
 func TestPrefetch_Bundle(t *testing.T) {
@@ -61,7 +61,7 @@ func TestPrefetch_Bundle(t *testing.T) {
 
 	bundle, err := p.Bundle("meds")
 	assert.NoError(t, err)
-	assert.Equal(t, "searchset", bundle.Type)
+	assert.Equal(t, fhir.BundleTypeSearchset, bundle.Type)
 }
 
 func TestPrefetch_Missing(t *testing.T) {

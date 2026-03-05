@@ -2,8 +2,9 @@ package cdshooks
 
 import (
 	"encoding/json"
+	"time"
 
-	"github.com/your-org/cds-hooks-go/fhir"
+	fhir "github.com/samply/golang-fhir-models/fhir-models/fhir"
 )
 
 type Prefetch struct {
@@ -43,4 +44,31 @@ func (p Prefetch) Missing(declared map[string]string) []string {
 		}
 	}
 	return missing
+}
+
+func PatientAge(patient fhir.Patient) (int, error) {
+	if patient.BirthDate == nil || *patient.BirthDate == "" {
+		return 0, ErrBirthDateEmpty
+	}
+
+	birth, err := time.Parse("2006-01-02", *patient.BirthDate)
+	if err != nil {
+		return 0, err
+	}
+
+	now := time.Now()
+	age := now.Year() - birth.Year()
+
+	if now.YearDay() < birth.YearDay() {
+		age--
+	}
+
+	return age, nil
+}
+
+func BundleEntryCount(bundle fhir.Bundle) int {
+	if bundle.Entry == nil {
+		return 0
+	}
+	return len(bundle.Entry)
 }

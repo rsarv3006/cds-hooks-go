@@ -50,13 +50,13 @@ func handlePatientView(ctx context.Context, req cdshooks.CDSRequest) (cdshooks.C
 		return cdshooks.EmptyResponse(), nil
 	}
 
-	age, err := patient.Age()
+	age, err := cdshooks.PatientAge(patient)
 	if err != nil || age < 65 {
 		return cdshooks.EmptyResponse(), nil
 	}
 
 	meds, _ := req.Prefetch.Bundle("meds")
-	medCount := meds.Count()
+	medCount := cdshooks.BundleEntryCount(meds)
 
 	indicator := cdshooks.IndicatorInfo
 	if medCount >= 5 {

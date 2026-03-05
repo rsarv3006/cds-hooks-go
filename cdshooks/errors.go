@@ -1,6 +1,11 @@
 package cdshooks
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
+
+var ErrBirthDateEmpty = errors.New("birth date is empty")
 
 type ErrUnknownService struct {
 	ID string
