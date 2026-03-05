@@ -1,4 +1,4 @@
-package cdshooks
+package service
 
 import (
 	"context"
@@ -9,20 +9,22 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	cdshooks "github.com/your-org/cds-hooks-go/cdshooks"
 )
 
 func TestServer_Discovery(t *testing.T) {
 	title := "Test Service"
 	server := NewServer()
-	server.Register(ServiceEntry{
-		Service: Service{
+	server.Register(cdshooks.ServiceEntry{
+		Service: cdshooks.Service{
 			ID:          "test-service",
-			Hook:        HookPatientView,
+			Hook:        cdshooks.HookPatientView,
 			Title:       &title,
 			Description: "A test service",
 		},
-		Handler: HandlerFunc(func(ctx context.Context, req CDSRequest) (CDSResponse, error) {
-			return EmptyResponse(), nil
+		Handler: cdshooks.HandlerFunc(func(ctx context.Context, req cdshooks.CDSRequest) (cdshooks.CDSResponse, error) {
+			return cdshooks.EmptyResponse(), nil
 		}),
 	})
 
@@ -32,7 +34,7 @@ func TestServer_Discovery(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var result map[string][]Service
+	var result map[string][]cdshooks.Service
 	err := json.Unmarshal(w.Body.Bytes(), &result)
 	assert.NoError(t, err)
 	assert.Len(t, result["services"], 1)
@@ -48,7 +50,7 @@ func TestServer_Discovery_Empty(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var result map[string][]Service
+	var result map[string][]cdshooks.Service
 	err := json.Unmarshal(w.Body.Bytes(), &result)
 	assert.NoError(t, err)
 	assert.Len(t, result["services"], 0)
@@ -81,15 +83,15 @@ func TestServer_CORS(t *testing.T) {
 func TestServer_HookInstanceValidation(t *testing.T) {
 	title := "Test Service"
 	server := NewServer()
-	server.Register(ServiceEntry{
-		Service: Service{
+	server.Register(cdshooks.ServiceEntry{
+		Service: cdshooks.Service{
 			ID:          "test-service",
-			Hook:        HookPatientView,
+			Hook:        cdshooks.HookPatientView,
 			Title:       &title,
 			Description: "A test service",
 		},
-		Handler: HandlerFunc(func(ctx context.Context, req CDSRequest) (CDSResponse, error) {
-			return EmptyResponse(), nil
+		Handler: cdshooks.HandlerFunc(func(ctx context.Context, req cdshooks.CDSRequest) (cdshooks.CDSResponse, error) {
+			return cdshooks.EmptyResponse(), nil
 		}),
 	})
 
@@ -107,15 +109,15 @@ func TestServer_HookInstanceValidation(t *testing.T) {
 func TestServer_CardsNeverNull(t *testing.T) {
 	title := "Test Service"
 	server := NewServer()
-	server.Register(ServiceEntry{
-		Service: Service{
+	server.Register(cdshooks.ServiceEntry{
+		Service: cdshooks.Service{
 			ID:          "test-service",
-			Hook:        HookPatientView,
+			Hook:        cdshooks.HookPatientView,
 			Title:       &title,
 			Description: "A test service",
 		},
-		Handler: HandlerFunc(func(ctx context.Context, req CDSRequest) (CDSResponse, error) {
-			return EmptyResponse(), nil
+		Handler: cdshooks.HandlerFunc(func(ctx context.Context, req cdshooks.CDSRequest) (cdshooks.CDSResponse, error) {
+			return cdshooks.EmptyResponse(), nil
 		}),
 	})
 
@@ -128,7 +130,7 @@ func TestServer_CardsNeverNull(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var resp CDSResponse
+	var resp cdshooks.CDSResponse
 	err := json.Unmarshal(w.Body.Bytes(), &resp)
 	assert.NoError(t, err)
 	assert.NotNil(t, resp.Cards)
@@ -138,25 +140,25 @@ func TestServer_FeedbackEndpoint(t *testing.T) {
 	title := "Test Service"
 	feedbackReceived := false
 	var receivedServiceID string
-	var receivedFeedback FeedbackRequest
+	var receivedFeedback cdshooks.FeedbackRequest
 
 	server := NewServer(WithFeedbackHandler(&testFeedbackHandler{
-		fn: func(ctx context.Context, serviceID string, feedback FeedbackRequest) error {
+		fn: func(ctx context.Context, serviceID string, feedback cdshooks.FeedbackRequest) error {
 			feedbackReceived = true
 			receivedServiceID = serviceID
 			receivedFeedback = feedback
 			return nil
 		},
 	}))
-	server.Register(ServiceEntry{
-		Service: Service{
+	server.Register(cdshooks.ServiceEntry{
+		Service: cdshooks.Service{
 			ID:          "test-service",
-			Hook:        HookPatientView,
+			Hook:        cdshooks.HookPatientView,
 			Title:       &title,
 			Description: "A test service",
 		},
-		Handler: HandlerFunc(func(ctx context.Context, req CDSRequest) (CDSResponse, error) {
-			return EmptyResponse(), nil
+		Handler: cdshooks.HandlerFunc(func(ctx context.Context, req cdshooks.CDSRequest) (cdshooks.CDSResponse, error) {
+			return cdshooks.EmptyResponse(), nil
 		}),
 	})
 
@@ -171,33 +173,33 @@ func TestServer_FeedbackEndpoint(t *testing.T) {
 	assert.True(t, feedbackReceived)
 	assert.Equal(t, "test-service", receivedServiceID)
 	assert.Equal(t, "card-123", receivedFeedback.Card)
-	assert.Equal(t, OutcomeAccepted, receivedFeedback.Outcome)
+	assert.Equal(t, cdshooks.OutcomeAccepted, receivedFeedback.Outcome)
 }
 
 func TestServer_FeedbackEndpoint_Override(t *testing.T) {
 	title := "Test Service"
-	var receivedFeedback FeedbackRequest
+	var receivedFeedback cdshooks.FeedbackRequest
 
 	server := NewServer(WithFeedbackHandler(&testFeedbackHandler{
-		fn: func(ctx context.Context, serviceID string, feedback FeedbackRequest) error {
+		fn: func(ctx context.Context, serviceID string, feedback cdshooks.FeedbackRequest) error {
 			receivedFeedback = feedback
 			return nil
 		},
 	}))
-	server.Register(ServiceEntry{
-		Service: Service{
+	server.Register(cdshooks.ServiceEntry{
+		Service: cdshooks.Service{
 			ID:          "test-service",
-			Hook:        HookPatientView,
+			Hook:        cdshooks.HookPatientView,
 			Title:       &title,
 			Description: "A test service",
 		},
-		Handler: HandlerFunc(func(ctx context.Context, req CDSRequest) (CDSResponse, error) {
-			return EmptyResponse(), nil
+		Handler: cdshooks.HandlerFunc(func(ctx context.Context, req cdshooks.CDSRequest) (cdshooks.CDSResponse, error) {
+			return cdshooks.EmptyResponse(), nil
 		}),
 	})
 
-	reason := OverrideReason{
-		Reason: &Coding{Code: "reason-code"},
+	reason := cdshooks.OverrideReason{
+		Reason: &cdshooks.Coding{Code: "reason-code"},
 	}
 	reasonJSON, _ := json.Marshal(reason)
 	feedbackBody := `{"card":"card-123","outcome":"overridden","overrideReason":` + string(reasonJSON) + `,"outcomeTimestamp":"2024-01-01T00:00:00Z"}`
@@ -208,7 +210,7 @@ func TestServer_FeedbackEndpoint_Override(t *testing.T) {
 	server.Handler().ServeHTTP(w, r)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, OutcomeOverridden, receivedFeedback.Outcome)
+	assert.Equal(t, cdshooks.OutcomeOverridden, receivedFeedback.Outcome)
 	assert.NotNil(t, receivedFeedback.OverrideReason)
 }
 
@@ -227,19 +229,19 @@ func TestServer_FeedbackEndpoint_NotEnabled(t *testing.T) {
 func TestServer_FeedbackEndpoint_InvalidBody(t *testing.T) {
 	title := "Test Service"
 	server := NewServer(WithFeedbackHandler(&testFeedbackHandler{
-		fn: func(ctx context.Context, serviceID string, feedback FeedbackRequest) error {
+		fn: func(ctx context.Context, serviceID string, feedback cdshooks.FeedbackRequest) error {
 			return nil
 		},
 	}))
-	server.Register(ServiceEntry{
-		Service: Service{
+	server.Register(cdshooks.ServiceEntry{
+		Service: cdshooks.Service{
 			ID:          "test-service",
-			Hook:        HookPatientView,
+			Hook:        cdshooks.HookPatientView,
 			Title:       &title,
 			Description: "A test service",
 		},
-		Handler: HandlerFunc(func(ctx context.Context, req CDSRequest) (CDSResponse, error) {
-			return EmptyResponse(), nil
+		Handler: cdshooks.HandlerFunc(func(ctx context.Context, req cdshooks.CDSRequest) (cdshooks.CDSResponse, error) {
+			return cdshooks.EmptyResponse(), nil
 		}),
 	})
 
@@ -253,25 +255,25 @@ func TestServer_FeedbackEndpoint_InvalidBody(t *testing.T) {
 }
 
 type testFeedbackHandler struct {
-	fn func(ctx context.Context, serviceID string, feedback FeedbackRequest) error
+	fn func(ctx context.Context, serviceID string, feedback cdshooks.FeedbackRequest) error
 }
 
-func (h *testFeedbackHandler) Feedback(ctx context.Context, serviceID string, feedback FeedbackRequest) error {
+func (h *testFeedbackHandler) Feedback(ctx context.Context, serviceID string, feedback cdshooks.FeedbackRequest) error {
 	return h.fn(ctx, serviceID, feedback)
 }
 
 func TestServer_ErrorHandling_InvalidJSON(t *testing.T) {
 	title := "Test Service"
 	server := NewServer()
-	server.Register(ServiceEntry{
-		Service: Service{
+	server.Register(cdshooks.ServiceEntry{
+		Service: cdshooks.Service{
 			ID:          "test-service",
-			Hook:        HookPatientView,
+			Hook:        cdshooks.HookPatientView,
 			Title:       &title,
 			Description: "A test service",
 		},
-		Handler: HandlerFunc(func(ctx context.Context, req CDSRequest) (CDSResponse, error) {
-			return EmptyResponse(), nil
+		Handler: cdshooks.HandlerFunc(func(ctx context.Context, req cdshooks.CDSRequest) (cdshooks.CDSResponse, error) {
+			return cdshooks.EmptyResponse(), nil
 		}),
 	})
 
@@ -288,15 +290,15 @@ func TestServer_ErrorHandling_InvalidJSON(t *testing.T) {
 func TestServer_ErrorHandling_MissingHookInstance(t *testing.T) {
 	title := "Test Service"
 	server := NewServer()
-	server.Register(ServiceEntry{
-		Service: Service{
+	server.Register(cdshooks.ServiceEntry{
+		Service: cdshooks.Service{
 			ID:          "test-service",
-			Hook:        HookPatientView,
+			Hook:        cdshooks.HookPatientView,
 			Title:       &title,
 			Description: "A test service",
 		},
-		Handler: HandlerFunc(func(ctx context.Context, req CDSRequest) (CDSResponse, error) {
-			return EmptyResponse(), nil
+		Handler: cdshooks.HandlerFunc(func(ctx context.Context, req cdshooks.CDSRequest) (cdshooks.CDSResponse, error) {
+			return cdshooks.EmptyResponse(), nil
 		}),
 	})
 
@@ -314,15 +316,15 @@ func TestServer_ErrorHandling_MissingHookInstance(t *testing.T) {
 func TestServer_ErrorHandling_InvalidHookInstance(t *testing.T) {
 	title := "Test Service"
 	server := NewServer()
-	server.Register(ServiceEntry{
-		Service: Service{
+	server.Register(cdshooks.ServiceEntry{
+		Service: cdshooks.Service{
 			ID:          "test-service",
-			Hook:        HookPatientView,
+			Hook:        cdshooks.HookPatientView,
 			Title:       &title,
 			Description: "A test service",
 		},
-		Handler: HandlerFunc(func(ctx context.Context, req CDSRequest) (CDSResponse, error) {
-			return EmptyResponse(), nil
+		Handler: cdshooks.HandlerFunc(func(ctx context.Context, req cdshooks.CDSRequest) (cdshooks.CDSResponse, error) {
+			return cdshooks.EmptyResponse(), nil
 		}),
 	})
 

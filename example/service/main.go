@@ -7,7 +7,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/your-org/cds-hooks-go/cdshooks"
+	cdshooks "github.com/your-org/cds-hooks-go/cdshooks"
+	"github.com/your-org/cds-hooks-go/cdshooks/service"
 )
 
 func main() {
@@ -24,10 +25,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	server := cdshooks.NewServer(
-		cdshooks.WithLogger(slog.New(slog.NewJSONHandler(os.Stdout, nil))),
-		cdshooks.WithCORSOrigins("*"),
-		cdshooks.WithRequestTimeout(5*time.Second),
+	server := service.NewServer(
+		service.WithLogger(slog.New(slog.NewJSONHandler(os.Stdout, nil))),
+		service.WithCORSOrigins("*"),
+		service.WithRequestTimeout(5*time.Second),
 	)
 
 	server.Register(ageCheck)

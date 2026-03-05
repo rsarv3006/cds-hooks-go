@@ -1,4 +1,4 @@
-package cdshooks
+package service
 
 import (
 	"context"
@@ -13,10 +13,12 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+
+	cdshooks "github.com/your-org/cds-hooks-go/cdshooks"
 )
 
 type Server struct {
-	registry        map[string]ServiceEntry
+	registry        map[string]cdshooks.ServiceEntry
 	logger          *slog.Logger
 	corsOrigins     []string
 	requestTimeout  time.Duration
@@ -52,7 +54,7 @@ func WithFeedbackHandler(h FeedbackHandler) ServerOption {
 
 func NewServer(opts ...ServerOption) *Server {
 	s := &Server{
-		registry: make(map[string]ServiceEntry),
+		registry: make(map[string]cdshooks.ServiceEntry),
 		logger:   slog.Default(),
 	}
 
@@ -63,7 +65,7 @@ func NewServer(opts ...ServerOption) *Server {
 	return s
 }
 
-func (s *Server) Register(entries ...ServiceEntry) *Server {
+func (s *Server) Register(entries ...cdshooks.ServiceEntry) *Server {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -196,13 +198,13 @@ func (s *Server) handleDiscovery(w http.ResponseWriter, r *http.Request) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	services := make([]Service, 0, len(s.registry))
+	services := make([]cdshooks.Service, 0, len(s.registry))
 	for _, entry := range s.registry {
 		services = append(services, entry.Service)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string][]Service{
+	json.NewEncoder(w).Encode(map[string][]cdshooks.Service{
 		"services": services,
 	})
 }
@@ -219,7 +221,7 @@ func (s *Server) handleService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req CDSRequest
+	var req cdshooks.CDSRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		s.writeError(w, http.StatusBadRequest, "invalid request body")
 		return
@@ -250,7 +252,7 @@ func (s *Server) handleService(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if resp.Cards == nil {
-		resp.Cards = []Card{}
+		resp.Cards = []cdshooks.Card{}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -265,7 +267,7 @@ func (s *Server) handleFeedback(w http.ResponseWriter, r *http.Request) {
 
 	serviceID := chi.URLParam(r, "id")
 
-	var feedback FeedbackRequest
+	var feedback cdshooks.FeedbackRequest
 	if err := json.NewDecoder(r.Body).Decode(&feedback); err != nil {
 		s.writeError(w, http.StatusBadRequest, "invalid request body")
 		return
@@ -280,7 +282,7 @@ func (s *Server) handleFeedback(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(FeedbackResponse{Status: "ok"})
+	json.NewEncoder(w).Encode(cdshooks.FeedbackResponse{Status: "ok"})
 }
 
 func (s *Server) writeError(w http.ResponseWriter, code int, message string) {
@@ -302,5 +304,5 @@ func (rw *responseWriter) WriteHeader(code int) {
 }
 
 type FeedbackHandler interface {
-	Feedback(ctx context.Context, serviceID string, feedback FeedbackRequest) error
+	Feedback(ctx context.Context, serviceID string, feedback cdshooks.FeedbackRequest) error
 }
