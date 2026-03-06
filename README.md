@@ -11,7 +11,7 @@ This SDK handles all protocol concerns so consumers only write clinical logic. I
 
 ## Requirements
 
-- Go 1.21+
+- Go 1.25+
 - chi router (included as dependency)
 
 ## Installation
@@ -74,14 +74,8 @@ cds-hooks-go/
 │   ├── request.go     # CDSRequest type
 │   ├── response.go    # CDSResponse and Feedback types
 │   ├── service.go     # Service definition and Builder
-│   └── server.go      # HTTP server with CORS support
-│
-├── fhir/              # Thin FHIR R4 projections
-│   ├── patient.go     # Patient with Age(), DisplayName()
-│   ├── bundle.go      # Bundle with Resources[T] decoder
-│   ├── coding.go      # CodeableConcept, Coding, Reference
-│   ├── medication_request.go
-│   └── allergy_intolerance.go
+│   └── service/
+│       └── server.go  # HTTP server with CORS support
 │
 └── example/
     ├── service/       # Example CDS service

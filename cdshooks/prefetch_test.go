@@ -79,3 +79,17 @@ func TestPrefetch_Missing(t *testing.T) {
 	assert.Contains(t, missing, "meds")
 	assert.NotContains(t, missing, "patient")
 }
+
+func TestPrefetch_UnmarshalFromJSON(t *testing.T) {
+	jsonData := `{"hook":"patient-view","hookInstance":"123","context":{},"prefetch":{"patient":{"resourceType":"Patient","id":"123"}}}`
+	var req CDSRequest
+	err := json.Unmarshal([]byte(jsonData), &req)
+	assert.NoError(t, err)
+
+	assert.NotNil(t, req.Prefetch.raw)
+	assert.Len(t, req.Prefetch.raw, 1)
+
+	patient, err := req.Prefetch.Patient("patient")
+	assert.NoError(t, err)
+	assert.Equal(t, "123", *patient.Id)
+}

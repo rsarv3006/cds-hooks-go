@@ -10,7 +10,7 @@ type CDSRequest struct {
 	FHIRServer   string          `json:"fhirServer"`
 	FHIRAuth     *FHIRAuth       `json:"fhirAuthorization"`
 	Context      json.RawMessage `json:"context"`
-	Prefetch     Prefetch        `json:"prefetch"`
+	Prefetch     *Prefetch       `json:"prefetch"`
 	Extension    map[string]any  `json:"extension,omitempty"`
 }
 

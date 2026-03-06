@@ -11,12 +11,26 @@ type Prefetch struct {
 	raw map[string]json.RawMessage
 }
 
-func (p Prefetch) Get(key string) (json.RawMessage, bool) {
+func (p *Prefetch) UnmarshalJSON(data []byte) error {
+	p.raw = make(map[string]json.RawMessage)
+	if len(data) == 0 || string(data) == "null" {
+		return nil
+	}
+	return json.Unmarshal(data, &p.raw)
+}
+
+func (p *Prefetch) Get(key string) (json.RawMessage, bool) {
+	if p == nil || p.raw == nil {
+		return nil, false
+	}
 	val, ok := p.raw[key]
 	return val, ok
 }
 
-func (p Prefetch) Decode(key string, target any) error {
+func (p *Prefetch) Decode(key string, target any) error {
+	if p == nil || p.raw == nil {
+		return &ErrMissingPrefetch{Key: key}
+	}
 	raw, ok := p.raw[key]
 	if !ok {
 		return &ErrMissingPrefetch{Key: key}
@@ -24,19 +38,26 @@ func (p Prefetch) Decode(key string, target any) error {
 	return json.Unmarshal(raw, target)
 }
 
-func (p Prefetch) Patient(key string) (fhir.Patient, error) {
+func (p *Prefetch) Patient(key string) (fhir.Patient, error) {
 	var patient fhir.Patient
 	err := p.Decode(key, &patient)
 	return patient, err
 }
 
-func (p Prefetch) Bundle(key string) (fhir.Bundle, error) {
+func (p *Prefetch) Bundle(key string) (fhir.Bundle, error) {
 	var bundle fhir.Bundle
 	err := p.Decode(key, &bundle)
 	return bundle, err
 }
 
-func (p Prefetch) Missing(declared map[string]string) []string {
+func (p *Prefetch) Missing(declared map[string]string) []string {
+	if p == nil || p.raw == nil {
+		missing := make([]string, 0, len(declared))
+		for key := range declared {
+			missing = append(missing, key)
+		}
+		return missing
+	}
 	var missing []string
 	for key := range declared {
 		if _, ok := p.raw[key]; !ok {

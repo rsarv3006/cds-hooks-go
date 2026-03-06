@@ -179,10 +179,12 @@ func TestFullLifecycle_WithPrefetch(t *testing.T) {
 			},
 		},
 		Handler: cdshooks.HandlerFunc(func(ctx context.Context, req cdshooks.CDSRequest) (cdshooks.CDSResponse, error) {
-			missing := req.Prefetch.Missing(map[string]string{
-				"patient": "Patient/{{context.patientId}}",
-			})
-			card, _ := cdshooks.NewCard("Missing prefetch: "+strings.Join(missing, ","), cdshooks.IndicatorInfo).
+			patient, err := req.Prefetch.Patient("patient")
+			summary := "Patient prefetch not found"
+			if err == nil && patient.Id != nil {
+				summary = "Patient prefetch found: " + *patient.Id
+			}
+			card, _ := cdshooks.NewCard(summary, cdshooks.IndicatorInfo).
 				WithSource(cdshooks.Source{Label: "CDS Service"}).
 				Build()
 			return cdshooks.NewResponse().AddCard(card).Build(), nil
@@ -212,7 +214,7 @@ func TestFullLifecycle_WithPrefetch(t *testing.T) {
 	err := json.Unmarshal(w.Body.Bytes(), &resp)
 	assert.NoError(t, err)
 	assert.Len(t, resp.Cards, 1)
-	assert.Contains(t, resp.Cards[0].Summary, "patient")
+	assert.Contains(t, resp.Cards[0].Summary, "found")
 }
 
 func TestFullLifecycle_CardResponseFormat(t *testing.T) {
@@ -449,7 +451,7 @@ func TestRequestBody_NoPrefetch(t *testing.T) {
 			Description: "A test service",
 		},
 		Handler: cdshooks.HandlerFunc(func(ctx context.Context, req cdshooks.CDSRequest) (cdshooks.CDSResponse, error) {
-			assert.NotNil(t, req.Prefetch)
+			assert.Nil(t, req.Prefetch)
 			return cdshooks.EmptyResponse(), nil
 		}),
 	})
