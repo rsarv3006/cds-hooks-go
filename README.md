@@ -102,12 +102,21 @@ server.ListenAndServe(":8080")
 ### Supported Hooks
 
 ```go
-cdshooks.HookPatientView        // patient-view
-cdshooks.HookOrderSelect        // order-select
-cdshooks.HookOrderSign          // order-sign
-cdshooks.HookAppointmentBook    // appointment-book
-cdshooks.HookEncounterStart     // encounter-start
-cdshooks.HookEncounterDischarge // encounter-discharge
+// Stable hooks
+cdshooks.HookPatientView             // patient-view
+cdshooks.HookOrderSelect             // order-select
+cdshooks.HookOrderSign              // order-sign
+cdshooks.HookAppointmentBook         // appointment-book
+cdshooks.HookEncounterStart          // encounter-start
+cdshooks.HookEncounterDischarge     // encounter-discharge
+cdshooks.HookMedicationRefill       // medication-refill
+cdshooks.HookOrderDispatch          // order-dispatch
+cdshooks.HookAllergyIntoleranceCreate // allergyintolerance-create
+cdshooks.HookProblemListItemCreate   // problem-list-item-create
+
+// Deprecated but supported
+cdshooks.HookMedicationPrescribe    // medication-prescribe (deprecated)
+cdshooks.HookOrderReview            // order-review (deprecated)
 ```
 
 ### Context Types
