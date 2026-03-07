@@ -458,6 +458,86 @@ cds-hooks-go/
 go test ./...
 ```
 
+### External Validation with Inferno
+
+This SDK can be validated against the [Inferno Da Vinci CRD Test Kit](https://inferno.healthit.gov/test-kits/davinci-crd/) for official conformance testing.
+
+#### Running the Example Server
+
+```bash
+cd example/service
+go run main.go
+```
+
+The server will start on `http://localhost:8080`.
+
+#### Testing with Inferno (Docker)
+
+1. **Pull the Inferno CRD test kit:**
+
+```bash
+docker pull infernoframework/davinci-crd-test-kit
+```
+
+2. **Run the container:**
+
+```bash
+docker run -it -p 4567:4567 infernoframework/davinci-crd-test-kit
+```
+
+3. **Open browser to** `http://localhost:4567`
+
+4. **Select "Da Vinci CRD Server Test Suite"**
+
+5. **Enter your CDS Hooks service URL:**
+   - For the example server: `http://host.docker.internal:8080` (or your machine's IP)
+   - The discovery endpoint will be auto-discovered at `/cds-services`
+
+#### Testing with Custom Request Bodies
+
+Inferno allows you to provide custom request bodies to test specific scenarios. You can create JSON files with different hook invocations:
+
+**patient-view hook:**
+```json
+{
+  "hook": "patient-view",
+  "hookInstance": "test-instance-123",
+  "context": {
+    "userId": "Practitioner/123",
+    "patientId": "Patient/456"
+  }
+}
+```
+
+**order-select hook:**
+```json
+{
+  "hook": "order-select",
+  "hookInstance": "test-instance-456",
+  "context": {
+    "userId": "Practitioner/123",
+    "patientId": "Patient/456",
+    "selections": ["MedicationRequest/789"]
+  }
+}
+```
+
+#### Local Installation (Alternative)
+
+For testing without internet or private networks:
+
+```bash
+# Clone the test kit
+git clone https://github.com/inferno-framework/davinci-crd-test-kit.git
+cd davinci-crd-test-kit
+
+# Run setup
+./setup.sh
+
+# Run the test kit
+./run.sh
+```
+
 ## License
 
 MIT
