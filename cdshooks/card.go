@@ -128,12 +128,11 @@ func (b *CardBuilder) AddLink(link Link) *CardBuilder {
 	if b.err != nil {
 		return b
 	}
-	if b.card.Links != nil {
-
+	if b.card.Links == nil {
+		b.card.Links = &[]Link{link}
+	} else {
 		*b.card.Links = append(*b.card.Links, link)
 	}
-
-	b.card.Links = &[]Link{link}
 	return b
 }
 

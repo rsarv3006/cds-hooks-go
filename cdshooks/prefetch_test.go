@@ -93,3 +93,85 @@ func TestPrefetch_UnmarshalFromJSON(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "123", *patient.Id)
 }
+
+func TestPatientAge(t *testing.T) {
+	birthDate := "1990-01-15"
+	patient := fhir.Patient{
+		BirthDate: &birthDate,
+	}
+
+	age, err := PatientAge(patient)
+	assert.NoError(t, err)
+	assert.GreaterOrEqual(t, age, 30)
+}
+
+func TestPatientAge_EmptyBirthDate(t *testing.T) {
+	patient := fhir.Patient{
+		BirthDate: nil,
+	}
+
+	_, err := PatientAge(patient)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "empty")
+}
+
+func TestPatientAge_EmptyStringBirthDate(t *testing.T) {
+	emptyDate := ""
+	patient := fhir.Patient{
+		BirthDate: &emptyDate,
+	}
+
+	_, err := PatientAge(patient)
+	assert.Error(t, err)
+}
+
+func TestPatientAge_InvalidFormat(t *testing.T) {
+	invalidDate := "01-15-1990"
+	patient := fhir.Patient{
+		BirthDate: &invalidDate,
+	}
+
+	_, err := PatientAge(patient)
+	assert.Error(t, err)
+}
+
+func TestBundleEntryCount(t *testing.T) {
+	bundle := fhir.Bundle{
+		Entry: nil,
+	}
+
+	count := BundleEntryCount(bundle)
+	assert.Equal(t, 0, count)
+}
+
+func TestBundleEntryCount_WithEntries(t *testing.T) {
+	bundle := fhir.Bundle{
+		Entry: []fhir.BundleEntry{
+			{},
+			{},
+			{},
+		},
+	}
+
+	count := BundleEntryCount(bundle)
+	assert.Equal(t, 3, count)
+}
+
+func TestPrefetch_Nil(t *testing.T) {
+	var p *Prefetch
+
+	_, ok := p.Get("test")
+	assert.False(t, ok)
+
+	err := p.Decode("test", &struct{}{})
+	assert.Error(t, err)
+
+	_, err = p.Patient("test")
+	assert.Error(t, err)
+
+	_, err = p.Bundle("test")
+	assert.Error(t, err)
+
+	missing := p.Missing(map[string]string{"test": "Test"})
+	assert.Contains(t, missing, "test")
+}
