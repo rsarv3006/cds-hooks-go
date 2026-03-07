@@ -574,3 +574,147 @@ func TestServer_RequestTimeout(t *testing.T) {
 
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 }
+
+func TestDiscovery_AllSupportedHooks(t *testing.T) {
+	title := "Test Service"
+	services := []cdshooks.ServiceEntry{
+		{
+			Service: cdshooks.Service{
+				ID:          "patient-view-svc",
+				Hook:        cdshooks.HookPatientView,
+				Title:       &title,
+				Description: "Patient view service",
+			},
+			Handler: cdshooks.HandlerFunc(func(ctx context.Context, req cdshooks.CDSRequest) (cdshooks.CDSResponse, error) {
+				return cdshooks.EmptyResponse(), nil
+			}),
+		},
+		{
+			Service: cdshooks.Service{
+				ID:          "order-select-svc",
+				Hook:        cdshooks.HookOrderSelect,
+				Title:       &title,
+				Description: "Order select service",
+			},
+			Handler: cdshooks.HandlerFunc(func(ctx context.Context, req cdshooks.CDSRequest) (cdshooks.CDSResponse, error) {
+				return cdshooks.EmptyResponse(), nil
+			}),
+		},
+		{
+			Service: cdshooks.Service{
+				ID:          "order-sign-svc",
+				Hook:        cdshooks.HookOrderSign,
+				Title:       &title,
+				Description: "Order sign service",
+			},
+			Handler: cdshooks.HandlerFunc(func(ctx context.Context, req cdshooks.CDSRequest) (cdshooks.CDSResponse, error) {
+				return cdshooks.EmptyResponse(), nil
+			}),
+		},
+		{
+			Service: cdshooks.Service{
+				ID:          "appointment-book-svc",
+				Hook:        cdshooks.HookAppointmentBook,
+				Title:       &title,
+				Description: "Appointment book service",
+			},
+			Handler: cdshooks.HandlerFunc(func(ctx context.Context, req cdshooks.CDSRequest) (cdshooks.CDSResponse, error) {
+				return cdshooks.EmptyResponse(), nil
+			}),
+		},
+		{
+			Service: cdshooks.Service{
+				ID:          "encounter-start-svc",
+				Hook:        cdshooks.HookEncounterStart,
+				Title:       &title,
+				Description: "Encounter start service",
+			},
+			Handler: cdshooks.HandlerFunc(func(ctx context.Context, req cdshooks.CDSRequest) (cdshooks.CDSResponse, error) {
+				return cdshooks.EmptyResponse(), nil
+			}),
+		},
+		{
+			Service: cdshooks.Service{
+				ID:          "encounter-discharge-svc",
+				Hook:        cdshooks.HookEncounterDischarge,
+				Title:       &title,
+				Description: "Encounter discharge service",
+			},
+			Handler: cdshooks.HandlerFunc(func(ctx context.Context, req cdshooks.CDSRequest) (cdshooks.CDSResponse, error) {
+				return cdshooks.EmptyResponse(), nil
+			}),
+		},
+		{
+			Service: cdshooks.Service{
+				ID:          "medication-refill-svc",
+				Hook:        cdshooks.HookMedicationRefill,
+				Title:       &title,
+				Description: "Medication refill service",
+			},
+			Handler: cdshooks.HandlerFunc(func(ctx context.Context, req cdshooks.CDSRequest) (cdshooks.CDSResponse, error) {
+				return cdshooks.EmptyResponse(), nil
+			}),
+		},
+		{
+			Service: cdshooks.Service{
+				ID:          "order-dispatch-svc",
+				Hook:        cdshooks.HookOrderDispatch,
+				Title:       &title,
+				Description: "Order dispatch service",
+			},
+			Handler: cdshooks.HandlerFunc(func(ctx context.Context, req cdshooks.CDSRequest) (cdshooks.CDSResponse, error) {
+				return cdshooks.EmptyResponse(), nil
+			}),
+		},
+		{
+			Service: cdshooks.Service{
+				ID:          "allergy-create-svc",
+				Hook:        cdshooks.HookAllergyIntoleranceCreate,
+				Title:       &title,
+				Description: "Allergy intolerance create service",
+			},
+			Handler: cdshooks.HandlerFunc(func(ctx context.Context, req cdshooks.CDSRequest) (cdshooks.CDSResponse, error) {
+				return cdshooks.EmptyResponse(), nil
+			}),
+		},
+		{
+			Service: cdshooks.Service{
+				ID:          "problem-list-svc",
+				Hook:        cdshooks.HookProblemListItemCreate,
+				Title:       &title,
+				Description: "Problem list item create service",
+			},
+			Handler: cdshooks.HandlerFunc(func(ctx context.Context, req cdshooks.CDSRequest) (cdshooks.CDSResponse, error) {
+				return cdshooks.EmptyResponse(), nil
+			}),
+		},
+	}
+
+	server := NewServer()
+	server.Register(services...)
+
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("GET", "/cds-services", nil)
+	server.Handler().ServeHTTP(w, r)
+
+	var result map[string][]cdshooks.Service
+	err := json.Unmarshal(w.Body.Bytes(), &result)
+	assert.NoError(t, err)
+	assert.Len(t, result["services"], 10)
+
+	hookMap := make(map[string]string)
+	for _, s := range result["services"] {
+		hookMap[string(s.Hook)] = s.ID
+	}
+
+	assert.Contains(t, hookMap, string(cdshooks.HookPatientView))
+	assert.Contains(t, hookMap, string(cdshooks.HookOrderSelect))
+	assert.Contains(t, hookMap, string(cdshooks.HookOrderSign))
+	assert.Contains(t, hookMap, string(cdshooks.HookAppointmentBook))
+	assert.Contains(t, hookMap, string(cdshooks.HookEncounterStart))
+	assert.Contains(t, hookMap, string(cdshooks.HookEncounterDischarge))
+	assert.Contains(t, hookMap, string(cdshooks.HookMedicationRefill))
+	assert.Contains(t, hookMap, string(cdshooks.HookOrderDispatch))
+	assert.Contains(t, hookMap, string(cdshooks.HookAllergyIntoleranceCreate))
+	assert.Contains(t, hookMap, string(cdshooks.HookProblemListItemCreate))
+}
