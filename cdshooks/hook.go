@@ -5,12 +5,23 @@ import "encoding/json"
 type Hook string
 
 const (
-	HookPatientView        Hook = "patient-view"
-	HookOrderSelect        Hook = "order-select"
-	HookOrderSign          Hook = "order-sign"
-	HookAppointmentBook    Hook = "appointment-book"
-	HookEncounterStart     Hook = "encounter-start"
-	HookEncounterDischarge Hook = "encounter-discharge"
+	HookPatientView          Hook = "patient-view"
+	HookOrderSelect          Hook = "order-select"
+	HookOrderSign            Hook = "order-sign"
+	HookOrderEdit            Hook = "order-edit"
+	HookOrderClose           Hook = "order-close"
+	HookAppointmentBook      Hook = "appointment-book"
+	HookAppointmentEdit      Hook = "appointment-edit"
+	HookEncounterStart       Hook = "encounter-start"
+	HookEncounterDischarge   Hook = "encounter-discharge"
+	HookMedicationPrescribe  Hook = "medication-prescribe"
+	HookMedicationDispense   Hook = "medication-dispense"
+	HookMedicationAdminister Hook = "medication-administer"
+	HookDiagnosticReport     Hook = "diagnostic-report"
+	HookPatientEdit          Hook = "patient-edit"
+	HookTask                 Hook = "task"
+	HookClaim                Hook = "claim"
+	HookSmartConfig          Hook = "smart-config"
 )
 
 type PatientViewContext struct {
