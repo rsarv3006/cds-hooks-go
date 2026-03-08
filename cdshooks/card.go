@@ -13,6 +13,14 @@ const (
 	IndicatorInfo     CardIndicator = "info"
 	IndicatorWarning  CardIndicator = "warning"
 	IndicatorCritical CardIndicator = "critical"
+	IndicatorSuccess  CardIndicator = "success"
+)
+
+const (
+	ExtCoverageInformation = "http://hl7.org/fhir/us/davinci-crd/StructureDefinition/ext-coverage-information"
+	ExtInstructions        = "http://hl7.org/fhir/us/davinci-crd/StructureDefinition/ext-instructions"
+	ExtExternalReference   = "http://hl7.org/fhir/us/davinci-crd/StructureDefinition/ext-external-reference"
+	ExtProposeAlternate    = "http://hl7.org/fhir/us/davinci-crd/StructureDefinition/ext-propose-alternate"
 )
 
 type Card struct {
@@ -25,6 +33,12 @@ type Card struct {
 	SelectionBehavior string
 	OverrideReasons   *[]Coding
 	Links             *[]Link
+	Extension         []CardExtension
+}
+
+type CardExtension struct {
+	URL   string
+	Value any
 }
 
 type Suggestion struct {
@@ -141,6 +155,17 @@ func (b *CardBuilder) WithSelectionBehavior(behavior string) *CardBuilder {
 		return b
 	}
 	b.card.SelectionBehavior = behavior
+	return b
+}
+
+func (b *CardBuilder) AddExtension(url string, value any) *CardBuilder {
+	if b.err != nil {
+		return b
+	}
+	b.card.Extension = append(b.card.Extension, CardExtension{
+		URL:   url,
+		Value: value,
+	})
 	return b
 }
 

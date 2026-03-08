@@ -59,6 +59,13 @@ type EncounterDischargeContext struct {
 	EncounterID string
 }
 
+type OrderDispatchContext struct {
+	UserID      string
+	PatientID   string
+	EncounterID string
+	Orders      json.RawMessage
+}
+
 func ParseContext[T any](raw json.RawMessage) (T, error) {
 	var result T
 	err := json.Unmarshal(raw, &result)
