@@ -3,13 +3,13 @@ package cdshooks
 import "context"
 
 type Service struct {
-	ID                string
-	Hook              Hook
-	Title             *string
-	Description       string
-	Prefetch          map[string]string
-	UsageRequirements string
-	Extension         map[string]any
+	ID                string            `json:"id"`
+	Hook              Hook              `json:"hook"`
+	Title             *string           `json:"title"`
+	Description       string            `json:"description"`
+	Prefetch          map[string]string `json:"prefetch"`
+	UsageRequirements string            `json:"usageRequirements,omitempty"`
+	Extension         map[string]any    `json:"extension,omitempty"`
 }
 
 type Handler interface {

@@ -24,35 +24,35 @@ const (
 )
 
 type Card struct {
-	UUID              *string
-	Summary           string
-	Detail            *string
-	Indicator         CardIndicator
-	Source            Source
-	Suggestions       *[]Suggestion
-	SelectionBehavior string
-	OverrideReasons   *[]Coding
-	Links             *[]Link
-	Extension         []CardExtension
+	UUID              *string         `json:"uuid,omitempty"`
+	Summary           string          `json:"summary"`
+	Detail            *string         `json:"detail,omitempty"`
+	Indicator         CardIndicator   `json:"indicator"`
+	Source            Source          `json:"source"`
+	Suggestions       *[]Suggestion   `json:"suggestions,omitempty"`
+	SelectionBehavior string          `json:"selectionBehavior,omitempty"`
+	OverrideReasons   *[]Coding       `json:"overrideReasons,omitempty"`
+	Links             *[]Link         `json:"links,omitempty"`
+	Extension         []CardExtension `json:"extension,omitempty"`
 }
 
 type CardExtension struct {
-	URL   string
-	Value any
+	URL   string `json:"url"`
+	Value any    `json:"value,omitempty"`
 }
 
 type Suggestion struct {
-	Label         string
-	UUID          *string
-	IsRecommended *bool
-	Actions       *[]Action
+	Label         string    `json:"label"`
+	UUID          *string   `json:"uuid,omitempty"`
+	IsRecommended *bool     `json:"isRecommended,omitempty"`
+	Actions       *[]Action `json:"actions,omitempty"`
 }
 
 type Action struct {
-	Type        ActionType
-	Description string
-	Resource    json.RawMessage
-	ResourceID  string
+	Type        ActionType      `json:"type"`
+	Description string          `json:"description"`
+	Resource    json.RawMessage `json:"resource,omitempty"`
+	ResourceID  string          `json:"resourceId,omitempty"`
 }
 
 type ActionType string
@@ -64,11 +64,11 @@ const (
 )
 
 type Link struct {
-	Label          string
-	URL            string
-	Type           LinkType
-	AppContext     string
-	Autolaunchable *bool
+	Label          string   `json:"label"`
+	URL            string   `json:"url"`
+	Type           LinkType `json:"type,omitempty"`
+	AppContext     string   `json:"appContext,omitempty"`
+	Autolaunchable *bool    `json:"autolaunchable,omitempty"`
 }
 
 type LinkType string
@@ -79,10 +79,10 @@ const (
 )
 
 type Source struct {
-	Label string
-	URL   *string
-	Icon  *string
-	Topic *Coding
+	Label string  `json:"label"`
+	URL   *string `json:"url,omitempty"`
+	Icon  *string `json:"icon,omitempty"`
+	Topic *Coding `json:"topic,omitempty"`
 }
 
 type OverrideReason struct {
@@ -91,9 +91,9 @@ type OverrideReason struct {
 }
 
 type Coding struct {
-	System  string
-	Code    string
-	Display *string
+	System  string  `json:"system,omitempty"`
+	Code    string  `json:"code"`
+	Display *string `json:"display,omitempty"`
 }
 
 type CardBuilder struct {

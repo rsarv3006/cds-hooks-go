@@ -114,9 +114,25 @@ func handleOrderSign(ctx context.Context, req cdshooks.CDSRequest) (cdshooks.CDS
 		return cdshooks.CDSResponse{}, err
 	}
 
+	resp := cdshooks.NewResponse()
+
 	patient, err := req.Prefetch.Patient("patient")
 	if err != nil {
-		return createInstructionsCard("Patient data required", "Unable to fetch patient information.")
+		card, _ := cdshooks.NewCard(
+			"Patient data required",
+			cdshooks.IndicatorInfo,
+		).
+			WithSource(cdshooks.Source{
+				Label: "CRD Service",
+				Topic: &cdshooks.Coding{System: "urn:cds-hooks:topic", Code: "order-sign"},
+			}).
+			WithDetail("Unable to fetch patient information.").
+			AddExtension(cdshooks.ExtInstructions, map[string]any{
+				"text": "Unable to fetch patient information.",
+			}).
+			Build()
+		resp.AddCard(card)
+		return resp.Build(), nil
 	}
 
 	age, _ := cdshooks.PatientAge(patient)
@@ -125,21 +141,24 @@ func handleOrderSign(ctx context.Context, req cdshooks.CDSRequest) (cdshooks.CDS
 	covBundle, _ := req.Prefetch.Bundle("coverage")
 	coverages := extractCoverages(covBundle)
 
+	patientName := getPatientName(patient)
+
 	if len(coverages) == 0 {
 		card, _ := cdshooks.NewCard(
 			"No active coverage found",
 			cdshooks.IndicatorWarning,
 		).
-			WithSource(cdshooks.Source{Label: "CRD Service"}).
+			WithSource(cdshooks.Source{
+				Label: "CRD Service",
+				Topic: &cdshooks.Coding{System: "urn:cds-hooks:topic", Code: "order-sign"},
+			}).
 			WithDetail("The patient does not have active insurance coverage on file. Coverage verification is recommended prior to signing the order.").
 			Build()
-		return cdshooks.NewResponse().AddCard(card).Build(), nil
+		resp.AddCard(card)
+		return resp.Build(), nil
 	}
 
-	coverageInfo := buildCoverageInformation(coverages)
-
-	patientName := getPatientName(patient)
-	detail := fmt.Sprintf("Patient: %s\n\nActive Coverage:\n%s\n\nDocumentation may be required for this order.", patientName, coverageInfo)
+	detail := fmt.Sprintf("Patient: %s\n\nActive Coverage:\n%s\n\nDocumentation may be required for this order.", patientName, buildCoverageInformation(coverages))
 
 	card, _ := cdshooks.NewCard(
 		"Coverage requirements checked",
@@ -148,14 +167,31 @@ func handleOrderSign(ctx context.Context, req cdshooks.CDSRequest) (cdshooks.CDS
 		WithSource(cdshooks.Source{
 			Label: "CRD Coverage Service",
 			URL:   stringPtr("https://example.org/crd"),
+			Topic: &cdshooks.Coding{System: "urn:cds-hooks:topic", Code: "order-sign"},
 		}).
 		WithDetail(detail).
 		AddExtension(cdshooks.ExtCoverageInformation, map[string]any{
+			"coverage":        coverages[0].Id,
 			"requirementsMet": true,
+			"contact":         []any{},
+			"additionalDocs":  []any{},
 		}).
 		Build()
 
-	return cdshooks.NewResponse().AddCard(card).Build(), nil
+	resp.AddCard(card)
+
+	for _, cov := range coverages {
+		if cov.Id != nil {
+			covJSON, _ := json.Marshal(cov)
+			action := cdshooks.NewAction(cdshooks.ActionCreate, "Create coverage information").
+				WithResource(covJSON).
+				WithResourceID(*cov.Id).
+				Build()
+			resp.AddSystemAction(action)
+		}
+	}
+
+	return resp.Build(), nil
 }
 
 func handleOrderSelect(ctx context.Context, req cdshooks.CDSRequest) (cdshooks.CDSResponse, error) {
@@ -184,6 +220,8 @@ func handleAppointmentBook(ctx context.Context, req cdshooks.CDSRequest) (cdshoo
 	covBundle, _ := req.Prefetch.Bundle("coverage")
 	coverages := extractCoverages(covBundle)
 
+	resp := cdshooks.NewResponse()
+
 	if len(coverages) == 0 {
 		card, _ := cdshooks.NewCard(
 			"Coverage verification needed",
@@ -192,7 +230,7 @@ func handleAppointmentBook(ctx context.Context, req cdshooks.CDSRequest) (cdshoo
 			WithSource(cdshooks.Source{Label: "CRD Service"}).
 			WithDetail("No active coverage found. Please verify insurance before scheduling.").
 			Build()
-		return cdshooks.NewResponse().AddCard(card).Build(), nil
+		return resp.AddCard(card).Build(), nil
 	}
 
 	coverageInfo := buildCoverageInformation(coverages)
@@ -204,10 +242,33 @@ func handleAppointmentBook(ctx context.Context, req cdshooks.CDSRequest) (cdshoo
 	).
 		WithSource(cdshooks.Source{Label: "CRD Service"}).
 		WithDetail(detail).
-		AddExtension(cdshooks.ExtCoverageInformation, map[string]any{}).
+		AddExtension(cdshooks.ExtCoverageInformation, map[string]any{
+			"coverage":        coverages[0].Id,
+			"requirementsMet": true,
+			"contact":         []any{},
+			"additionalDocs":  []any{},
+		}).
+		AddLink(cdshooks.Link{
+			Label: "View Coverage Details",
+			URL:   "https://example.org/coverage-portal",
+			Type:  cdshooks.LinkSmart,
+		}).
 		Build()
 
-	return cdshooks.NewResponse().AddCard(card).Build(), nil
+	resp.AddCard(card)
+
+	for _, cov := range coverages {
+		if cov.Id != nil {
+			covJSON, _ := json.Marshal(cov)
+			action := cdshooks.NewAction(cdshooks.ActionCreate, "Create coverage information").
+				WithResource(covJSON).
+				WithResourceID(*cov.Id).
+				Build()
+			resp.AddSystemAction(action)
+		}
+	}
+
+	return resp.Build(), nil
 }
 
 func handleEncounterStart(ctx context.Context, req cdshooks.CDSRequest) (cdshooks.CDSResponse, error) {
@@ -219,6 +280,8 @@ func handleEncounterStart(ctx context.Context, req cdshooks.CDSRequest) (cdshook
 	covBundle, _ := req.Prefetch.Bundle("coverage")
 	coverages := extractCoverages(covBundle)
 
+	resp := cdshooks.NewResponse()
+
 	if len(coverages) == 0 {
 		card, _ := cdshooks.NewCard(
 			"No active coverage",
@@ -227,7 +290,7 @@ func handleEncounterStart(ctx context.Context, req cdshooks.CDSRequest) (cdshook
 			WithSource(cdshooks.Source{Label: "CRD Service"}).
 			WithDetail("No active insurance coverage found for this patient.").
 			Build()
-		return cdshooks.NewResponse().AddCard(card).Build(), nil
+		return resp.AddCard(card).Build(), nil
 	}
 
 	coverageInfo := buildCoverageInformation(coverages)
@@ -238,6 +301,12 @@ func handleEncounterStart(ctx context.Context, req cdshooks.CDSRequest) (cdshook
 	).
 		WithSource(cdshooks.Source{Label: "CRD Service"}).
 		WithDetail(coverageInfo).
+		AddExtension(cdshooks.ExtCoverageInformation, map[string]any{
+			"coverage":        coverages[0].Id,
+			"requirementsMet": true,
+			"contact":         []any{},
+			"additionalDocs":  []any{},
+		}).
 		AddLink(cdshooks.Link{
 			Label: "View Coverage Details",
 			URL:   "https://example.org/coverage-portal",
@@ -245,7 +314,7 @@ func handleEncounterStart(ctx context.Context, req cdshooks.CDSRequest) (cdshook
 		}).
 		Build()
 
-	return cdshooks.NewResponse().AddCard(card).Build(), nil
+	return resp.AddCard(card).Build(), nil
 }
 
 func handleEncounterDischarge(ctx context.Context, req cdshooks.CDSRequest) (cdshooks.CDSResponse, error) {
@@ -277,6 +346,8 @@ func handleOrderDispatch(ctx context.Context, req cdshooks.CDSRequest) (cdshooks
 	covBundle, _ := req.Prefetch.Bundle("coverage")
 	coverages := extractCoverages(covBundle)
 
+	resp := cdshooks.NewResponse()
+
 	if len(coverages) == 0 {
 		card, _ := cdshooks.NewCard(
 			"Cannot dispatch - no coverage",
@@ -285,7 +356,7 @@ func handleOrderDispatch(ctx context.Context, req cdshooks.CDSRequest) (cdshooks
 			WithSource(cdshooks.Source{Label: "CRD Service"}).
 			WithDetail("Order cannot be dispatched without active insurance coverage. Please verify coverage before proceeding.").
 			Build()
-		return cdshooks.NewResponse().AddCard(card).Build(), nil
+		return resp.AddCard(card).Build(), nil
 	}
 
 	card, _ := cdshooks.NewCard(
@@ -295,12 +366,28 @@ func handleOrderDispatch(ctx context.Context, req cdshooks.CDSRequest) (cdshooks
 		WithSource(cdshooks.Source{Label: "CRD Service"}).
 		WithDetail("Coverage verified. Order is ready for dispatch to fulfillment.").
 		AddExtension(cdshooks.ExtCoverageInformation, map[string]any{
+			"coverage":        coverages[0].Id,
 			"requirementsMet": true,
 			"dispatchAllowed": true,
+			"contact":         []any{},
+			"additionalDocs":  []any{},
 		}).
 		Build()
 
-	return cdshooks.NewResponse().AddCard(card).Build(), nil
+	resp.AddCard(card)
+
+	for _, cov := range coverages {
+		if cov.Id != nil {
+			covJSON, _ := json.Marshal(cov)
+			action := cdshooks.NewAction(cdshooks.ActionCreate, "Create coverage information").
+				WithResource(covJSON).
+				WithResourceID(*cov.Id).
+				Build()
+			resp.AddSystemAction(action)
+		}
+	}
+
+	return resp.Build(), nil
 }
 
 func extractCoverages(bundle fhir.Bundle) []fhir.Coverage {

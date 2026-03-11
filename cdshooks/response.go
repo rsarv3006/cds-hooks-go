@@ -4,7 +4,7 @@ import "encoding/json"
 
 type CDSResponse struct {
 	Cards         []Card   `json:"cards"`
-	SystemActions []Action `json:"systemActions,omitempty"`
+	SystemActions []Action `json:"systemActions"`
 }
 
 type ResponseBuilder struct {
@@ -32,6 +32,9 @@ func (b *ResponseBuilder) AddSystemAction(action Action) *ResponseBuilder {
 func (b *ResponseBuilder) Build() CDSResponse {
 	if b.response.Cards == nil {
 		b.response.Cards = []Card{}
+	}
+	if b.response.SystemActions == nil {
+		b.response.SystemActions = []Action{}
 	}
 	return b.response
 }
