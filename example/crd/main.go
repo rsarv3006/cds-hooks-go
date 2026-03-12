@@ -204,7 +204,10 @@ func handleOrderSelect(ctx context.Context, req cdshooks.CDSRequest) (cdshooks.C
 		"Order selection noted",
 		cdshooks.IndicatorInfo,
 	).
-		WithSource(cdshooks.Source{Label: "CRD Service"}).
+		WithSource(cdshooks.Source{
+			Label: "CRD Service",
+			Topic: &cdshooks.Coding{System: "urn:cds-hooks:topic", Code: "order-select"},
+		}).
 		WithDetail("Coverage requirements will be evaluated when the order is signed.").
 		Build()
 
@@ -222,12 +225,30 @@ func handleAppointmentBook(ctx context.Context, req cdshooks.CDSRequest) (cdshoo
 
 	resp := cdshooks.NewResponse()
 
+	extRefCard, _ := cdshooks.NewCard(
+		"View coverage details",
+		cdshooks.IndicatorInfo,
+	).
+		WithSource(cdshooks.Source{
+			Label: "CRD Service",
+			Topic: &cdshooks.Coding{System: "urn:cds-hooks:topic", Code: "appointment-book"},
+		}).
+		AddExtension(cdshooks.ExtExternalReference, map[string]any{
+			"url":   "https://example.org/coverage-portal",
+			"label": "View Coverage Details",
+		}).
+		Build()
+	resp.AddCard(extRefCard)
+
 	if len(coverages) == 0 {
 		card, _ := cdshooks.NewCard(
 			"Coverage verification needed",
 			cdshooks.IndicatorWarning,
 		).
-			WithSource(cdshooks.Source{Label: "CRD Service"}).
+			WithSource(cdshooks.Source{
+				Label: "CRD Service",
+				Topic: &cdshooks.Coding{System: "urn:cds-hooks:topic", Code: "appointment-book"},
+			}).
 			WithDetail("No active coverage found. Please verify insurance before scheduling.").
 			Build()
 		return resp.AddCard(card).Build(), nil
@@ -240,7 +261,10 @@ func handleAppointmentBook(ctx context.Context, req cdshooks.CDSRequest) (cdshoo
 		"Appointment coverage verified",
 		cdshooks.IndicatorInfo,
 	).
-		WithSource(cdshooks.Source{Label: "CRD Service"}).
+		WithSource(cdshooks.Source{
+			Label: "CRD Service",
+			Topic: &cdshooks.Coding{System: "urn:cds-hooks:topic", Code: "appointment-book"},
+		}).
 		WithDetail(detail).
 		AddExtension(cdshooks.ExtCoverageInformation, map[string]any{
 			"coverage":        coverages[0].Id,
@@ -287,7 +311,10 @@ func handleEncounterStart(ctx context.Context, req cdshooks.CDSRequest) (cdshook
 			"No active coverage",
 			cdshooks.IndicatorWarning,
 		).
-			WithSource(cdshooks.Source{Label: "CRD Service"}).
+			WithSource(cdshooks.Source{
+				Label: "CRD Service",
+				Topic: &cdshooks.Coding{System: "urn:cds-hooks:topic", Code: "encounter-start"},
+			}).
 			WithDetail("No active insurance coverage found for this patient.").
 			Build()
 		return resp.AddCard(card).Build(), nil
@@ -299,7 +326,10 @@ func handleEncounterStart(ctx context.Context, req cdshooks.CDSRequest) (cdshook
 		"Encounter coverage information",
 		cdshooks.IndicatorInfo,
 	).
-		WithSource(cdshooks.Source{Label: "CRD Service"}).
+		WithSource(cdshooks.Source{
+			Label: "CRD Service",
+			Topic: &cdshooks.Coding{System: "urn:cds-hooks:topic", Code: "encounter-start"},
+		}).
 		WithDetail(coverageInfo).
 		AddExtension(cdshooks.ExtCoverageInformation, map[string]any{
 			"coverage":        coverages[0].Id,
@@ -327,7 +357,10 @@ func handleEncounterDischarge(ctx context.Context, req cdshooks.CDSRequest) (cds
 		"Discharge instructions available",
 		cdshooks.IndicatorInfo,
 	).
-		WithSource(cdshooks.Source{Label: "CRD Service"}).
+		WithSource(cdshooks.Source{
+			Label: "CRD Service",
+			Topic: &cdshooks.Coding{System: "urn:cds-hooks:topic", Code: "encounter-discharge"},
+		}).
 		WithDetail("Coverage information has been documented. Patient may contact insurance for coverage questions.").
 		AddExtension(cdshooks.ExtInstructions, map[string]any{
 			"text": "Follow up with your primary care provider within 7 days. Contact insurance for coverage questions.",
@@ -353,7 +386,10 @@ func handleOrderDispatch(ctx context.Context, req cdshooks.CDSRequest) (cdshooks
 			"Cannot dispatch - no coverage",
 			cdshooks.IndicatorCritical,
 		).
-			WithSource(cdshooks.Source{Label: "CRD Service"}).
+			WithSource(cdshooks.Source{
+				Label: "CRD Service",
+				Topic: &cdshooks.Coding{System: "urn:cds-hooks:topic", Code: "order-dispatch"},
+			}).
 			WithDetail("Order cannot be dispatched without active insurance coverage. Please verify coverage before proceeding.").
 			Build()
 		return resp.AddCard(card).Build(), nil
@@ -363,7 +399,10 @@ func handleOrderDispatch(ctx context.Context, req cdshooks.CDSRequest) (cdshooks
 		"Order ready for dispatch",
 		cdshooks.IndicatorSuccess,
 	).
-		WithSource(cdshooks.Source{Label: "CRD Service"}).
+		WithSource(cdshooks.Source{
+			Label: "CRD Service",
+			Topic: &cdshooks.Coding{System: "urn:cds-hooks:topic", Code: "order-dispatch"},
+		}).
 		WithDetail("Coverage verified. Order is ready for dispatch to fulfillment.").
 		AddExtension(cdshooks.ExtCoverageInformation, map[string]any{
 			"coverage":        coverages[0].Id,
